@@ -1,0 +1,51 @@
+﻿services:
+  bot:
+    container_name: bot
+    image: discordbot
+    build:
+      context: .
+      dockerfile: DiscordBot/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    hostname: ss
+    restart: on-failure
+    environment:
+      - "DISCORD_TOKEN=your_token"
+      - "DATABASE_CONNECTION_STRING=User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=postgres"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - postgres:/var/lib/postgresql/data
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    hostname: postgres
+    ports:
+      - "0.0.0.0:5432:5432"
+    restart: unless-stopped
+    environment:
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_PASSWORD=postgres"
+      - "POSTGRES_DB=postgres"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER}",
+          "&&",
+          "psql",
+          "-U",
+          "$${POSTGRES_USER}",
+          "--list",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  postgres:
